@@ -54,6 +54,12 @@ export default function App() {
   }, [tables]);
 
   const addTable = (bossName: string, channelsCount: number) => {
+    const exists = tables.some((table) => table.bossName === bossName);
+    if (exists) {
+      window.alert(`${bossName} table already exists.`);
+      return;
+    }
+
     const table: BossTable = {
       id: makeTableId(),
       bossName,
