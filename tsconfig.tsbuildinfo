@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/backuppanel.tsx","./src/components/bosstablecard.tsx","./src/components/channelrow.tsx","./src/components/createtableform.tsx","./src/data/bosses.ts","./src/hooks/usenow.ts","./src/utils/backup.ts","./src/utils/duration.ts","./src/utils/time.ts"],"version":"5.9.3"}
