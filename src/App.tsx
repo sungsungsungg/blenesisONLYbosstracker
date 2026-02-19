@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BOSSES, BOSS_BY_NAME } from './data/bosses';
+import { ALL_LOCATIONS, BOSSES, BOSS_BY_NAME, LOCATION_GROUPS } from './data/bosses';
 import { CreateTableForm } from './components/CreateTableForm';
 import { BossTableCard } from './components/BossTableCard';
 import { BackupPanel } from './components/BackupPanel';
@@ -8,6 +8,8 @@ import type { BossTable, ChannelTimer } from './types';
 import { APP_TIME_ZONE } from './utils/time';
 
 const STORAGE_KEY = 'boss-timer/v1';
+const ALL_GROUPS = 'ALL_GROUPS';
+const ALL_LOCATIONS_VALUE = 'ALL_LOCATIONS';
 
 type StoredState = {
   tables: BossTable[];
@@ -41,6 +43,9 @@ function loadTables(): BossTable[] {
 
 export default function App() {
   const [tables, setTables] = useState<BossTable[]>(() => loadTables());
+  const [tableSearch, setTableSearch] = useState('');
+  const [tableLocationGroup, setTableLocationGroup] = useState(ALL_GROUPS);
+  const [tableLocation, setTableLocation] = useState(ALL_LOCATIONS_VALUE);
   const now = useNow(1000);
 
   useEffect(() => {
@@ -141,8 +146,34 @@ export default function App() {
         if (!boss) return null;
         return { table, boss };
       })
+      .filter((item) => {
+        if (!item) return false;
+        const term = tableSearch.trim().toLowerCase();
+        const matchesSearch =
+          term.length === 0 ||
+          item.boss.name.toLowerCase().includes(term) ||
+          item.boss.location.toLowerCase().includes(term);
+        const matchesGroup =
+          tableLocationGroup === ALL_GROUPS || item.boss.locationGroup === tableLocationGroup;
+        const matchesLocation =
+          tableLocation === ALL_LOCATIONS_VALUE || item.boss.location === tableLocation;
+        return matchesSearch && matchesGroup && matchesLocation;
+      })
       .filter((item): item is { table: BossTable; boss: (typeof BOSSES)[number] } => item !== null);
-  }, [tables]);
+  }, [tables, tableSearch, tableLocation, tableLocationGroup]);
+
+  const visibleLocations = useMemo(() => {
+    if (tableLocationGroup === ALL_GROUPS) return ALL_LOCATIONS;
+    const group = LOCATION_GROUPS.find((item) => item.label === tableLocationGroup);
+    if (!group) return ALL_LOCATIONS;
+    return group.locations;
+  }, [tableLocationGroup]);
+
+  useEffect(() => {
+    if (tableLocation !== ALL_LOCATIONS_VALUE && !visibleLocations.includes(tableLocation)) {
+      setTableLocation(ALL_LOCATIONS_VALUE);
+    }
+  }, [tableLocation, visibleLocations]);
 
   return (
     <div className="app">
@@ -154,6 +185,48 @@ export default function App() {
       <BackupPanel tables={tables} onReplaceTables={replaceTables} />
 
       <CreateTableForm onAddTable={addTable} />
+
+      <section className="panel">
+        <h2>Search Existing Tables</h2>
+        <div className="create-form">
+          <label>
+            Search Boss / Location
+            <input
+              type="text"
+              value={tableSearch}
+              placeholder="Type boss or location"
+              onChange={(event) => setTableSearch(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Location Group
+            <select
+              value={tableLocationGroup}
+              onChange={(event) => setTableLocationGroup(event.target.value)}
+            >
+              <option value={ALL_GROUPS}>All groups</option>
+              {LOCATION_GROUPS.map((group) => (
+                <option key={group.id} value={group.label}>
+                  {group.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Location
+            <select value={tableLocation} onChange={(event) => setTableLocation(event.target.value)}>
+              <option value={ALL_LOCATIONS_VALUE}>All locations</option>
+              {visibleLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
 
       <main className="tables">
         {tableViews.length === 0 ? (

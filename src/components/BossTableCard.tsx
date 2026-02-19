@@ -41,7 +41,9 @@ export function BossTableCard({
       <div className="panel-header">
         <div>
           <h3>{table.bossName}</h3>
-          <p className="muted">Respawn range: {rangeLabel}</p>
+          <p className="muted">
+            {boss.location} | Respawn range: {rangeLabel}
+          </p>
         </div>
         <button className="btn-danger" onClick={() => onRemoveTable(table.id)}>
           Remove table

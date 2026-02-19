@@ -4,6 +4,8 @@ export type BossDef = {
   maxMs: number;
   minLabel: string;
   maxLabel: string;
+  location: string;
+  locationGroup: string;
 };
 
 export type ChannelTimer = {
