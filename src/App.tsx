@@ -169,7 +169,7 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Boss Timer Tracker</h1>
-        <p className="muted">All timestamps are displayed in {APP_TIME_ZONE} (EST/EDT).</p>
+        <p className="muted">All timestamps are displayed in your local timezone ({APP_TIME_ZONE}).</p>
       </header>
 
       <BackupPanel tables={tables} onReplaceTables={replaceTables} onMergeTables={mergeTables} />

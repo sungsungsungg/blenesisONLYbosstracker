@@ -67,8 +67,8 @@ export function BossTableCard({
             <tr>
               <th>Channel</th>
               <th>Status</th>
-              <th>Earliest (NY)</th>
-              <th>Latest (NY)</th>
+              <th>Earliest (Local)</th>
+              <th>Latest (Local)</th>
               <th>Countdown</th>
               <th>Killed</th>
               <th>Clear</th>

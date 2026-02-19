@@ -1,5 +1,5 @@
 import type { ChannelTimer } from '../types';
-import { formatCountdown, formatTimestampNy, getChannelStatus } from '../utils/time';
+import { formatCountdown, formatTimestampLocal, getChannelStatus } from '../utils/time';
 
 type ChannelRowProps = {
   channel: ChannelTimer;
@@ -24,8 +24,8 @@ export function ChannelRow({ channel, now, onKilled, onClear }: ChannelRowProps)
         {status === 'IN_WINDOW' && 'IN WINDOW'}
         {status === 'LATE' && 'Late'}
       </td>
-      <td>{formatTimestampNy(channel.earliestRespawnAt)}</td>
-      <td>{formatTimestampNy(channel.latestRespawnAt)}</td>
+      <td>{formatTimestampLocal(channel.earliestRespawnAt)}</td>
+      <td>{formatTimestampLocal(channel.latestRespawnAt)}</td>
       <td>
         {!channel.earliestRespawnAt || !channel.latestRespawnAt
           ? '-'

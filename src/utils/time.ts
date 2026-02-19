@@ -1,22 +1,38 @@
 import { formatDurationMs } from './duration';
 
-export const APP_TIME_ZONE = 'America/New_York';
+export function getUserTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
 
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: APP_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-  timeZoneName: 'short',
-});
+export const APP_TIME_ZONE = getUserTimeZone();
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
-export function formatTimestampNy(ms?: number): string {
+function getDateTimeFormatter(timeZone: string): Intl.DateTimeFormat {
+  const cached = formatterCache.get(timeZone);
+  if (cached) return cached;
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'short',
+  });
+  formatterCache.set(timeZone, formatter);
+  return formatter;
+}
+
+export function formatTimestampLocal(ms?: number): string {
   if (!ms) return '-';
-  return dateTimeFormatter.format(new Date(ms));
+  return getDateTimeFormatter(APP_TIME_ZONE).format(new Date(ms));
 }
 
 export function formatCountdown(targetMs?: number, nowMs = Date.now()): string {
