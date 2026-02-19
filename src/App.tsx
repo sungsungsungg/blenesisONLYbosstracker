@@ -5,7 +5,7 @@ import { BossTableCard } from './components/BossTableCard';
 import { BackupPanel } from './components/BackupPanel';
 import { useNow } from './hooks/useNow';
 import type { BossTable, ChannelTimer } from './types';
-import { APP_TIME_ZONE } from './utils/time';
+import { APP_TIME_ZONE, getChannelStatus } from './utils/time';
 
 const STORAGE_KEY = 'boss-timer/v1';
 const ALL_GROUPS = 'ALL_GROUPS';
@@ -46,6 +46,7 @@ export default function App() {
   const [tableSearch, setTableSearch] = useState('');
   const [tableLocationGroup, setTableLocationGroup] = useState(ALL_GROUPS);
   const [tableLocation, setTableLocation] = useState(ALL_LOCATIONS_VALUE);
+  const [onlySpawnAvailable, setOnlySpawnAvailable] = useState(false);
   const now = useNow(1000);
 
   useEffect(() => {
@@ -163,10 +164,20 @@ export default function App() {
           tableLocationGroup === ALL_GROUPS || item.boss.locationGroup === tableLocationGroup;
         const matchesLocation =
           tableLocation === ALL_LOCATIONS_VALUE || item.boss.location === tableLocation;
-        return matchesSearch && matchesGroup && matchesLocation;
+        const matchesSpawnAvailability =
+          !onlySpawnAvailable ||
+          item.table.channels.some((channel) => {
+            const status = getChannelStatus(
+              now,
+              channel.earliestRespawnAt,
+              channel.latestRespawnAt
+            );
+            return status === 'IN_WINDOW' || status === 'LATE';
+          });
+        return matchesSearch && matchesGroup && matchesLocation && matchesSpawnAvailability;
       })
       .filter((item): item is { table: BossTable; boss: (typeof BOSSES)[number] } => item !== null);
-  }, [tables, tableSearch, tableLocation, tableLocationGroup]);
+  }, [tables, tableSearch, tableLocation, tableLocationGroup, onlySpawnAvailable, now]);
 
   const visibleLocations = useMemo(() => {
     if (tableLocationGroup === ALL_GROUPS) return ALL_LOCATIONS;
@@ -229,6 +240,17 @@ export default function App() {
                   {location}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label>
+            Spawn Filter
+            <select
+              value={onlySpawnAvailable ? 'available' : 'all'}
+              onChange={(event) => setOnlySpawnAvailable(event.target.value === 'available')}
+            >
+              <option value="all">All tables</option>
+              <option value="available">Spawn available (any CH)</option>
             </select>
           </label>
         </div>
