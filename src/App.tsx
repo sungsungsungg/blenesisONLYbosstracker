@@ -4,21 +4,33 @@ import { CreateTableForm } from './components/CreateTableForm';
 import { BossTableCard } from './components/BossTableCard';
 import { BackupPanel } from './components/BackupPanel';
 import { useNow } from './hooks/useNow';
-import type { BossTable, ChannelTimer } from './types';
+import type { BossDef, BossTable, ChannelTimer } from './types';
 import { APP_TIME_ZONE, getChannelStatus } from './utils/time';
 
 const STORAGE_KEY = 'boss-timer/v1';
 const ALL_GROUPS = 'ALL_GROUPS';
 const ALL_LOCATIONS_VALUE = 'ALL_LOCATIONS';
+const DEFAULT_GLOBAL_CHANNELS = 10;
 
 type StoredState = {
   tables: BossTable[];
 };
 
+function createTimedChannel(channel: number, boss: BossDef, baseMs: number): ChannelTimer {
+  return {
+    channel,
+    killedAt: baseMs,
+    earliestRespawnAt: baseMs + boss.minMs,
+    latestRespawnAt: baseMs + boss.maxMs,
+  };
+}
+
+function createEmptyChannel(channel: number): ChannelTimer {
+  return { channel };
+}
+
 function makeChannels(count: number): ChannelTimer[] {
-  return Array.from({ length: count }, (_, index) => ({
-    channel: index + 1,
-  }));
+  return Array.from({ length: count }, (_, index) => createEmptyChannel(index + 1));
 }
 
 function makeTableId(): string {
@@ -47,6 +59,10 @@ export default function App() {
   const [tableLocationGroup, setTableLocationGroup] = useState(ALL_GROUPS);
   const [tableLocation, setTableLocation] = useState(ALL_LOCATIONS_VALUE);
   const [onlySpawnAvailable, setOnlySpawnAvailable] = useState(false);
+  const [globalChannelsCount, setGlobalChannelsCount] = useState<number>(() => {
+    const loaded = loadTables();
+    return loaded[0]?.channelsCount ?? DEFAULT_GLOBAL_CHANNELS;
+  });
   const now = useNow(1000);
 
   useEffect(() => {
@@ -54,7 +70,7 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [tables]);
 
-  const addTable = (bossName: string, channelsCount: number) => {
+  const addTable = (bossName: string) => {
     const exists = tables.some((table) => table.bossName === bossName);
     if (exists) {
       window.alert(`${bossName} table already exists.`);
@@ -64,8 +80,8 @@ export default function App() {
     const table: BossTable = {
       id: makeTableId(),
       bossName,
-      channelsCount,
-      channels: makeChannels(channelsCount),
+      channelsCount: globalChannelsCount,
+      channels: makeChannels(globalChannelsCount),
       createdAt: Date.now(),
     };
 
@@ -76,27 +92,73 @@ export default function App() {
     setTables((prev) => prev.filter((table) => table.id !== tableId));
   };
 
-  const setChannelsCount = (tableId: string, nextCount: number) => {
+  const applyGlobalChannelsCount = () => {
+    const nextCount = Math.max(1, Math.min(50, Math.floor(globalChannelsCount)));
+    const currentMaxCount = tables.reduce((max, table) => Math.max(max, table.channelsCount), 0);
+
+    if (nextCount < currentMaxCount) {
+      const ok = window.confirm(
+        `Reduce all tables to ${nextCount} channels? Extra channels will be removed from the end.`
+      );
+      if (!ok) return;
+    }
+
     setTables((prev) =>
       prev.map((table) => {
-        if (table.id !== tableId) return table;
+        if (nextCount <= table.channelsCount) {
+          return {
+            ...table,
+            channelsCount: nextCount,
+            channels: table.channels.slice(0, nextCount),
+          };
+        }
 
-        const nextChannels =
-          nextCount > table.channelsCount
-            ? [
-                ...table.channels,
-                ...Array.from({ length: nextCount - table.channelsCount }, (_, idx) => ({
-                  channel: table.channelsCount + idx + 1,
-                })),
-              ]
-            : table.channels.slice(0, nextCount);
+        const extraChannels = Array.from({ length: nextCount - table.channelsCount }, (_, idx) =>
+          createEmptyChannel(table.channelsCount + idx + 1)
+        );
 
         return {
           ...table,
           channelsCount: nextCount,
-          channels: nextChannels,
+          channels: [...table.channels, ...extraChannels],
         };
       })
+    );
+
+    setGlobalChannelsCount(nextCount);
+  };
+
+  const addTimedChannelToAllTables = () => {
+    const createdAt = Date.now();
+
+    setTables((prev) =>
+      prev.map((table) => {
+        const boss = BOSS_BY_NAME.get(table.bossName);
+        const nextChannelNumber = table.channelsCount + 1;
+        const nextChannel = boss
+          ? createTimedChannel(nextChannelNumber, boss, createdAt)
+          : createEmptyChannel(nextChannelNumber);
+
+        return {
+          ...table,
+          channelsCount: nextChannelNumber,
+          channels: [...table.channels, nextChannel],
+        };
+      })
+    );
+
+    setGlobalChannelsCount((prev) => Math.min(50, prev + 1));
+  };
+
+  const clearAllChannels = () => {
+    const ok = window.confirm('Clear every channel timer in all existing tables?');
+    if (!ok) return;
+
+    setTables((prev) =>
+      prev.map((table) => ({
+        ...table,
+        channels: table.channels.map((channel) => ({ channel: channel.channel })),
+      }))
     );
   };
 
@@ -144,6 +206,9 @@ export default function App() {
 
   const replaceTables = (nextTables: BossTable[]) => {
     setTables(nextTables);
+    if (nextTables.length > 0) {
+      setGlobalChannelsCount(nextTables[0].channelsCount);
+    }
   };
 
   const tableViews = useMemo(() => {
@@ -201,7 +266,31 @@ export default function App() {
 
       <BackupPanel tables={tables} onReplaceTables={replaceTables} />
 
-      <CreateTableForm onAddTable={addTable} />
+      <section className="panel">
+        <h2>Global Table Controls</h2>
+        <div className="create-form">
+          <label>
+            Channels For All Tables (1-50)
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={globalChannelsCount}
+              onChange={(event) => setGlobalChannelsCount(Number(event.target.value || 1))}
+            />
+          </label>
+          <button onClick={applyGlobalChannelsCount}>Apply To All Tables</button>
+          <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
+          <button className="btn-danger" onClick={clearAllChannels}>
+            Clear All Rows (All Tables)
+          </button>
+        </div>
+        <p className="muted global-note">
+          Apply To All Tables adds empty channels only. Use Add Timed CH To All Tables to append a channel with respawn timers starting now.
+        </p>
+      </section>
+
+      <CreateTableForm onAddTable={addTable} channelsCount={globalChannelsCount} />
 
       <section className="panel">
         <h2>Search Existing Tables</h2>
@@ -267,7 +356,6 @@ export default function App() {
               boss={boss}
               now={now}
               onRemoveTable={removeTable}
-              onSetChannelsCount={setChannelsCount}
               onKilled={markKilled}
               onClear={clearChannel}
             />

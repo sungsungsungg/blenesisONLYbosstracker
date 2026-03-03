@@ -74,7 +74,7 @@ const BOSSES_RAW = [
   { name: 'Crazy Meowz', min: '1h 50m', max: '7h', location: 'Taiwan' },
   { name: 'Manon', min: '1h', max: '1h', location: 'Leafre' },
   { name: 'Griffey', min: '1h', max: '1h', location: 'Leafre' },
-  { name: 'Pianus', min: '3h', max: '5h', location: 'Aqua Road' },
+  { name: 'Pianus', min: '2h 40m', max: '5h', location: 'Aqua Road' },
   { name: 'Leviathan', min: '4h', max: '12h', location: 'Leafre' },
   { name: 'Dodo', min: '45m', max: '5h 15m', location: 'Temple of Time' },
   { name: 'Lilynouch', min: '45m', max: '5h 15m', location: 'Temple of Time' },

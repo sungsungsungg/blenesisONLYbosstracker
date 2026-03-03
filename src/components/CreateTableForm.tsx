@@ -2,18 +2,18 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ALL_LOCATIONS, BOSSES, LOCATION_GROUPS } from '../data/bosses';
 
 type CreateTableFormProps = {
-  onAddTable: (bossName: string, channelsCount: number) => void;
+  onAddTable: (bossName: string) => void;
+  channelsCount: number;
 };
 
 const ALL_GROUPS = 'ALL_GROUPS';
 const ALL_LOCATIONS_VALUE = 'ALL_LOCATIONS';
 
-export function CreateTableForm({ onAddTable }: CreateTableFormProps) {
+export function CreateTableForm({ onAddTable, channelsCount }: CreateTableFormProps) {
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(ALL_GROUPS);
   const [selectedLocation, setSelectedLocation] = useState(ALL_LOCATIONS_VALUE);
   const [selectedBoss, setSelectedBoss] = useState(BOSSES[0]?.name ?? '');
-  const [channelsCount, setChannelsCount] = useState(10);
 
   const visibleLocations = useMemo(() => {
     if (selectedGroup === ALL_GROUPS) return ALL_LOCATIONS;
@@ -56,8 +56,7 @@ export function CreateTableForm({ onAddTable }: CreateTableFormProps) {
     event.preventDefault();
     if (!selectedBoss) return;
 
-    const normalizedChannels = Math.max(1, Math.min(50, Math.floor(channelsCount)));
-    onAddTable(selectedBoss, normalizedChannels);
+    onAddTable(selectedBoss);
   };
 
   return (
@@ -113,14 +112,8 @@ export function CreateTableForm({ onAddTable }: CreateTableFormProps) {
         </label>
 
         <label>
-          Channels (1-50)
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={channelsCount}
-            onChange={(event) => setChannelsCount(Number(event.target.value || 1))}
-          />
+          Channels For New Table
+          <input type="number" value={channelsCount} disabled readOnly />
         </label>
 
         <button type="submit" disabled={!selectedBoss || filteredBosses.length === 0}>
