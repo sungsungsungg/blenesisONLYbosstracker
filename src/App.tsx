@@ -60,6 +60,8 @@ export default function App() {
   const [tableLocation, setTableLocation] = useState(ALL_LOCATIONS_VALUE);
   const [onlySpawnAvailable, setOnlySpawnAvailable] = useState(false);
   const [isGlobalControlsExpanded, setIsGlobalControlsExpanded] = useState(true);
+  const [desktopControlsExpanded, setDesktopControlsExpanded] = useState(true);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.innerWidth <= 1023);
   const [globalChannelsCount, setGlobalChannelsCount] = useState<number>(() => {
     const loaded = loadTables();
     return loaded[0]?.channelsCount ?? DEFAULT_GLOBAL_CHANNELS;
@@ -262,6 +264,63 @@ export default function App() {
     }
   }, [tableLocation, visibleLocations]);
 
+  useEffect(() => {
+    const handleViewportChange = () => {
+      const shouldCollapse = window.innerWidth <= 1023;
+      const wasNarrow = isNarrowViewport;
+
+      setIsNarrowViewport(shouldCollapse);
+
+      if (shouldCollapse && !wasNarrow) {
+        setIsGlobalControlsExpanded(false);
+      }
+
+      if (!shouldCollapse && wasNarrow) {
+        setIsGlobalControlsExpanded(desktopControlsExpanded);
+      }
+    };
+
+    handleViewportChange();
+    window.addEventListener('resize', handleViewportChange);
+
+    return () => window.removeEventListener('resize', handleViewportChange);
+  }, [desktopControlsExpanded, isNarrowViewport]);
+
+  const closeGlobalControls = () => {
+    setIsGlobalControlsExpanded(false);
+    if (!isNarrowViewport) {
+      setDesktopControlsExpanded(false);
+    }
+  };
+
+  const openGlobalControls = () => {
+    setIsGlobalControlsExpanded(true);
+    if (!isNarrowViewport) {
+      setDesktopControlsExpanded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isNarrowViewport || !isGlobalControlsExpanded) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeGlobalControls();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isGlobalControlsExpanded, isNarrowViewport]);
+
+  const appLayoutClass = isNarrowViewport
+    ? 'mobile-sidebar'
+    : isGlobalControlsExpanded
+      ? 'with-sidebar'
+      : 'without-sidebar';
+
   return (
     <div className="app">
       <header>
@@ -271,9 +330,7 @@ export default function App() {
         </p>
       </header>
 
-      <div
-        className={`app-layout ${isGlobalControlsExpanded ? 'with-sidebar' : 'without-sidebar'}`}
-      >
+      <div className={`app-layout ${appLayoutClass}`}>
         <div className="main-column">
           <BackupPanel tables={tables} onReplaceTables={replaceTables} />
           <CreateTableForm onAddTable={addTable} channelsCount={globalChannelsCount} />
@@ -353,20 +410,38 @@ export default function App() {
           </main>
         </div>
 
+        {isGlobalControlsExpanded && isNarrowViewport ? (
+          <button
+            type="button"
+            className="mobile-sidebar-overlay"
+            onClick={closeGlobalControls}
+            aria-label="Close Global Table Controls"
+            title="Close Global Table Controls"
+          />
+        ) : null}
+
         {isGlobalControlsExpanded ? (
-          <aside className="sidebar expanded">
+          <aside className={isNarrowViewport ? 'sidebar mobile-expanded' : 'sidebar expanded'}>
             <section className="panel sticky-panel">
-              <div className="panel-header">
-                <h2>Global Table Controls</h2>
+              <div className="panel-header global-controls-header">
+                <h2 className="global-controls-title">Global Table Controls</h2>
                 <button
                   type="button"
-                  className="panel-header-toggle"
-                  onClick={() => setIsGlobalControlsExpanded(false)}
-                  aria-label="Collapse Global Table Controls"
-                  title="Collapse Global Table Controls"
+                  className="panel-header-toggle global-controls-toggle"
+                  onClick={closeGlobalControls}
+                  aria-label={
+                    isNarrowViewport
+                      ? 'Close Global Table Controls'
+                      : 'Collapse Global Table Controls'
+                  }
+                  title={
+                    isNarrowViewport
+                      ? 'Close Global Table Controls'
+                      : 'Collapse Global Table Controls'
+                  }
                 >
                   <span className="panel-arrow expanded" aria-hidden="true">
-                    ▾
+                    −
                   </span>
                 </button>
               </div>
@@ -423,7 +498,7 @@ export default function App() {
               <button
                 type="button"
                 className="side-tab-button side-tab-menu"
-                onClick={() => setIsGlobalControlsExpanded(true)}
+                onClick={openGlobalControls}
                 aria-label="Expand Global Table Controls"
                 title="Expand Global Table Controls"
               >
