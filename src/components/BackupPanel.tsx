@@ -33,7 +33,11 @@ async function copyText(text: string, textarea: HTMLTextAreaElement | null): Pro
   }
 }
 
-function formatChannelTimer(timer: { killedAt?: number; earliestRespawnAt?: number; latestRespawnAt?: number }): string {
+function formatChannelTimer(timer: {
+  killedAt?: number;
+  earliestRespawnAt?: number;
+  latestRespawnAt?: number;
+}): string {
   if (!timer.earliestRespawnAt && !timer.latestRespawnAt) return 'No timer';
   const earliest = formatTimestampLocal(timer.earliestRespawnAt);
   const latest = formatTimestampLocal(timer.latestRespawnAt);
@@ -47,6 +51,7 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [choices, setChoices] = useState<Record<string, ConflictChoice>>({});
@@ -85,13 +90,13 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
         setMessage(
           result.warnings.length > 0
             ? `Merged with warnings: ${result.warnings.join(' ')}`
-            : `Merged ${result.payload.tables.length} table(s) with no conflicts.`
+            : `Merged ${result.payload.tables.length} table(s) with no conflicts.`,
         );
       } else {
         setMergePreview(preview);
         setChoices(preview.defaultChoices);
         setMessage(
-          `Found ${preview.conflicts.length} conflict(s). Choose what to keep, then click Apply Merge.`
+          `Found ${preview.conflicts.length} conflict(s). Choose what to keep, then click Apply Merge.`,
         );
       }
     } catch (err) {
@@ -115,92 +120,114 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
 
   return (
     <section className="panel">
-      <h2>Backup</h2>
-      <div className="backup-grid">
-        <div>
-          <button onClick={handleCopyBackup} disabled={isBusy}>
-            Copy Backup
-          </button>
-          <label className="backup-label">
-            Export String
-            <textarea
-              ref={exportRef}
-              className="backup-textarea"
-              value={exportText}
-              readOnly
-              placeholder={'Click "Copy Backup" to generate export string'}
-            />
-          </label>
-        </div>
-
-        <div>
-          <label className="backup-label">
-            Paste Backup Here
-            <textarea
-              className="backup-textarea"
-              value={importText}
-              onChange={(event) => setImportText(event.target.value)}
-              placeholder="Paste BOSSTIMER_V2GZ:..., BOSSTIMER_V1:..., or raw JSON"
-            />
-          </label>
-          <div className="backup-actions">
-            <button onClick={handleMergeImport} disabled={isBusy}>
-              Merge Import
-            </button>
-          </div>
-        </div>
+      <div
+        className="panel-header panel-header-toggle"
+        onClick={() => setIsExpanded((value) => !value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsExpanded((value) => !value);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
+        <h2>Backup</h2>
+        <span className={`panel-arrow ${isExpanded ? 'expanded' : 'collapsed'}`} aria-hidden="true">
+          ▾
+        </span>
       </div>
 
-      {mergePreview && (
-        <div className="merge-conflicts">
-          <h3>Merge Conflicts</h3>
-          {mergePreview.conflicts.map((conflict) => (
-            <div key={conflict.id} className="merge-conflict-card">
-              <p className="merge-conflict-title">
-                {conflict.bossName} - CH {conflict.channel}
-              </p>
-              <p className="muted">Mine: {formatChannelTimer(conflict.mine)}</p>
-              <p className="muted">Theirs: {formatChannelTimer(conflict.theirs)}</p>
-              <div className="merge-choice-row">
-                <label>
-                  <input
-                    type="radio"
-                    name={conflict.id}
-                    checked={(choices[conflict.id] ?? 'mine') === 'mine'}
-                    onChange={() => handleChoiceChange(conflict.id, 'mine')}
-                  />
-                  Keep mine
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name={conflict.id}
-                    checked={(choices[conflict.id] ?? 'mine') === 'theirs'}
-                    onChange={() => handleChoiceChange(conflict.id, 'theirs')}
-                  />
-                  Keep theirs
-                </label>
+      {isExpanded && (
+        <>
+          <div className="backup-grid">
+            <div>
+              <button onClick={handleCopyBackup} disabled={isBusy}>
+                Copy Backup
+              </button>
+              <label className="backup-label">
+                Export String
+                <textarea
+                  ref={exportRef}
+                  className="backup-textarea"
+                  value={exportText}
+                  readOnly
+                  placeholder={'Click "Copy Backup" to generate export string'}
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="backup-label">
+                Paste Backup Here
+                <textarea
+                  className="backup-textarea"
+                  value={importText}
+                  onChange={(event) => setImportText(event.target.value)}
+                  placeholder="Paste BOSSTIMER_V2GZ:..., BOSSTIMER_V1:..., or raw JSON"
+                />
+              </label>
+              <div className="backup-actions">
+                <button onClick={handleMergeImport} disabled={isBusy}>
+                  Merge Import
+                </button>
               </div>
             </div>
-          ))}
-
-          <div className="backup-actions">
-            <button onClick={handleApplyMerge}>Apply Merge</button>
-            <button
-              className="btn-ghost"
-              onClick={() => {
-                setMergePreview(null);
-                setMessage('Merge canceled.');
-              }}
-            >
-              Cancel
-            </button>
           </div>
-        </div>
-      )}
 
-      {message && <p className="backup-message">{message}</p>}
-      {error && <p className="backup-error">{error}</p>}
+          {mergePreview && (
+            <div className="merge-conflicts">
+              <h3>Merge Conflicts</h3>
+              {mergePreview.conflicts.map((conflict) => (
+                <div key={conflict.id} className="merge-conflict-card">
+                  <p className="merge-conflict-title">
+                    {conflict.bossName} - CH {conflict.channel}
+                  </p>
+                  <p className="muted">Mine: {formatChannelTimer(conflict.mine)}</p>
+                  <p className="muted">Theirs: {formatChannelTimer(conflict.theirs)}</p>
+                  <div className="merge-choice-row">
+                    <label>
+                      <input
+                        type="radio"
+                        name={conflict.id}
+                        checked={(choices[conflict.id] ?? 'mine') === 'mine'}
+                        onChange={() => handleChoiceChange(conflict.id, 'mine')}
+                      />
+                      Keep mine
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={conflict.id}
+                        checked={(choices[conflict.id] ?? 'mine') === 'theirs'}
+                        onChange={() => handleChoiceChange(conflict.id, 'theirs')}
+                      />
+                      Keep theirs
+                    </label>
+                  </div>
+                </div>
+              ))}
+
+              <div className="backup-actions">
+                <button onClick={handleApplyMerge}>Apply Merge</button>
+                <button
+                  className="btn-ghost"
+                  onClick={() => {
+                    setMergePreview(null);
+                    setMessage('Merge canceled.');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {message && <p className="backup-message">{message}</p>}
+          {error && <p className="backup-error">{error}</p>}
+        </>
+      )}
     </section>
   );
 }

@@ -14,6 +14,7 @@ export function CreateTableForm({ onAddTable, channelsCount }: CreateTableFormPr
   const [selectedGroup, setSelectedGroup] = useState(ALL_GROUPS);
   const [selectedLocation, setSelectedLocation] = useState(ALL_LOCATIONS_VALUE);
   const [selectedBoss, setSelectedBoss] = useState(BOSSES[0]?.name ?? '');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const visibleLocations = useMemo(() => {
     if (selectedGroup === ALL_GROUPS) return ALL_LOCATIONS;
@@ -61,65 +62,88 @@ export function CreateTableForm({ onAddTable, channelsCount }: CreateTableFormPr
 
   return (
     <section className="panel">
-      <h2>Create Boss Table</h2>
-      <form className="create-form" onSubmit={handleSubmit}>
-        <label>
-          Search Boss / Location
-          <input
-            type="text"
-            value={search}
-            placeholder="Type boss or location"
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
+      <div
+        className="panel-header panel-header-toggle"
+        onClick={() => setIsExpanded((value) => !value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsExpanded((value) => !value);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+      >
+        <h2>Create Boss Table</h2>
+        <span className={`panel-arrow ${isExpanded ? 'expanded' : 'collapsed'}`} aria-hidden="true">
+          ▾
+        </span>
+      </div>
 
-        <label>
-          Location Group
-          <select value={selectedGroup} onChange={(event) => setSelectedGroup(event.target.value)}>
-            <option value={ALL_GROUPS}>All groups</option>
-            {LOCATION_GROUPS.map((group) => (
-              <option key={group.id} value={group.label}>
-                {group.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      {isExpanded && (
+        <form className="create-form" onSubmit={handleSubmit}>
+          <label>
+            Search Boss / Location
+            <input
+              type="text"
+              value={search}
+              placeholder="Type boss or location"
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
 
-        <label>
-          Location
-          <select
-            value={selectedLocation}
-            onChange={(event) => setSelectedLocation(event.target.value)}
-          >
-            <option value={ALL_LOCATIONS_VALUE}>All locations</option>
-            {visibleLocations.map((location) => (
-              <option key={location} value={location}>
-                {location}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Location Group
+            <select
+              value={selectedGroup}
+              onChange={(event) => setSelectedGroup(event.target.value)}
+            >
+              <option value={ALL_GROUPS}>All groups</option>
+              {LOCATION_GROUPS.map((group) => (
+                <option key={group.id} value={group.label}>
+                  {group.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Select Boss
-          <select value={selectedBoss} onChange={(event) => setSelectedBoss(event.target.value)}>
-            {filteredBosses.map((boss) => (
-              <option key={boss.name} value={boss.name}>
-                {boss.name} - {boss.location} ({boss.minLabel} - {boss.maxLabel})
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            Location
+            <select
+              value={selectedLocation}
+              onChange={(event) => setSelectedLocation(event.target.value)}
+            >
+              <option value={ALL_LOCATIONS_VALUE}>All locations</option>
+              {visibleLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label>
-          Channels For New Table
-          <input type="number" value={channelsCount} disabled readOnly />
-        </label>
+          <label>
+            Select Boss
+            <select value={selectedBoss} onChange={(event) => setSelectedBoss(event.target.value)}>
+              {filteredBosses.map((boss) => (
+                <option key={boss.name} value={boss.name}>
+                  {boss.name} - {boss.location} ({boss.minLabel} - {boss.maxLabel})
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <button type="submit" disabled={!selectedBoss || filteredBosses.length === 0}>
-          Add Table
-        </button>
-      </form>
+          <label>
+            Channels For New Table
+            <input type="number" value={channelsCount} disabled readOnly />
+          </label>
+
+          <button type="submit" disabled={!selectedBoss || filteredBosses.length === 0}>
+            Add Table
+          </button>
+        </form>
+      )}
     </section>
   );
 }

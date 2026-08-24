@@ -58,6 +58,8 @@ const BOSSES_RAW = [
   { name: 'Zombie Mushmom', min: '3h 15m', max: '3h 45m', location: 'Victoria Island' },
   { name: 'Riche', min: '45m', max: '1h 45m', location: 'El Nath' },
   { name: 'Zeno', min: '4h 30m', max: '5h 50m', location: 'Omega Sector' },
+  { name: 'Female Boss', min: '45m', max: '1h 30m', location: 'Japan' },
+  { name: 'Male Boss', min: '45m', max: '1h 30m', location: 'Japan' },
   { name: 'Bamboo Warrior', min: '1h 53m', max: '2h 8m', location: 'Japan' },
   { name: 'Nine-Tailed Fox', min: '3h 30m', max: '9h 30m', location: 'Korean Folk Town' },
   { name: 'Tae Roon', min: '1h 53m', max: '2h 8m', location: 'Mu Lung' },
