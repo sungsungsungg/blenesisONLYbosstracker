@@ -8,6 +8,7 @@ type BossTableCardProps = {
   onRemoveTable: (tableId: string) => void;
   onKilled: (tableId: string, channelNumber: number) => void;
   onClear: (tableId: string, channelNumber: number) => void;
+  use24Hour?: boolean;
 };
 
 export function BossTableCard({
@@ -17,6 +18,7 @@ export function BossTableCard({
   onRemoveTable,
   onKilled,
   onClear,
+  use24Hour = true,
 }: BossTableCardProps) {
   const rangeLabel = `${boss.minLabel} - ${boss.maxLabel}`;
 
@@ -53,6 +55,7 @@ export function BossTableCard({
                 key={channel.channel}
                 channel={channel}
                 now={now}
+                use24Hour={use24Hour}
                 onKilled={(channelNumber) => onKilled(table.id, channelNumber)}
                 onClear={(channelNumber) => onClear(table.id, channelNumber)}
               />

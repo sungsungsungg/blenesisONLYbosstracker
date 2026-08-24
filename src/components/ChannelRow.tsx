@@ -6,9 +6,10 @@ type ChannelRowProps = {
   now: number;
   onKilled: (channelNumber: number) => void;
   onClear: (channelNumber: number) => void;
+  use24Hour?: boolean;
 };
 
-export function ChannelRow({ channel, now, onKilled, onClear }: ChannelRowProps) {
+export function ChannelRow({ channel, now, onKilled, onClear, use24Hour = true }: ChannelRowProps) {
   const status = getChannelStatus(now, channel.earliestRespawnAt, channel.latestRespawnAt);
   const exactRespawn =
     channel.earliestRespawnAt &&
@@ -24,8 +25,8 @@ export function ChannelRow({ channel, now, onKilled, onClear }: ChannelRowProps)
         {status === 'IN_WINDOW' && 'IN WINDOW'}
         {status === 'LATE' && 'Late'}
       </td>
-      <td>{formatTimestampLocal(channel.earliestRespawnAt)}</td>
-      <td>{formatTimestampLocal(channel.latestRespawnAt)}</td>
+      <td>{formatTimestampLocal(channel.earliestRespawnAt, use24Hour)}</td>
+      <td>{formatTimestampLocal(channel.latestRespawnAt, use24Hour)}</td>
       <td>
         {!channel.earliestRespawnAt || !channel.latestRespawnAt
           ? '-'

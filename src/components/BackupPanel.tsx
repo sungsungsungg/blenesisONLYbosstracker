@@ -13,6 +13,7 @@ import { formatTimestampLocal } from '../utils/time';
 type BackupPanelProps = {
   tables: BossTable[];
   onReplaceTables: (tables: BossTable[]) => void;
+  use24Hour?: boolean;
 };
 
 async function copyText(text: string, textarea: HTMLTextAreaElement | null): Promise<void> {
@@ -33,19 +34,22 @@ async function copyText(text: string, textarea: HTMLTextAreaElement | null): Pro
   }
 }
 
-function formatChannelTimer(timer: {
-  killedAt?: number;
-  earliestRespawnAt?: number;
-  latestRespawnAt?: number;
-}): string {
+function formatChannelTimer(
+  timer: {
+    killedAt?: number;
+    earliestRespawnAt?: number;
+    latestRespawnAt?: number;
+  },
+  use24Hour = true,
+): string {
   if (!timer.earliestRespawnAt && !timer.latestRespawnAt) return 'No timer';
-  const earliest = formatTimestampLocal(timer.earliestRespawnAt);
-  const latest = formatTimestampLocal(timer.latestRespawnAt);
-  const killed = formatTimestampLocal(timer.killedAt);
+  const earliest = formatTimestampLocal(timer.earliestRespawnAt, use24Hour);
+  const latest = formatTimestampLocal(timer.latestRespawnAt, use24Hour);
+  const killed = formatTimestampLocal(timer.killedAt, use24Hour);
   return `Killed: ${killed} | Earliest: ${earliest} | Latest: ${latest}`;
 }
 
-export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
+export function BackupPanel({ tables, onReplaceTables, use24Hour = true }: BackupPanelProps) {
   const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
   const [message, setMessage] = useState('');
@@ -200,12 +204,18 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
                             <div className="merge-conflict-title">{conflict.bossName}</div>
                           </td>
                           <td rowSpan={2}>CH {conflict.channel}</td>
-                          <td className="muted">{formatTimestampLocal(conflict.mine.killedAt)}</td>
-                          <td className="muted">{formatTimestampLocal(conflict.mine.earliestRespawnAt)}</td>
-                          <td className="muted">{formatTimestampLocal(conflict.mine.latestRespawnAt)}</td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.mine.killedAt, use24Hour)}
+                          </td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.mine.earliestRespawnAt, use24Hour)}
+                          </td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.mine.latestRespawnAt, use24Hour)}
+                          </td>
                           <td>
                             <div className="merge-choice-row">
-                              <label>
+                              <label className="radio-bubble">
                                 <input
                                   type="radio"
                                   name={conflict.id}
@@ -219,12 +229,18 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
                         </tr>
 
                         <tr key={`${conflict.id}-theirs`}>
-                          <td className="muted">{formatTimestampLocal(conflict.theirs.killedAt)}</td>
-                          <td className="muted">{formatTimestampLocal(conflict.theirs.earliestRespawnAt)}</td>
-                          <td className="muted">{formatTimestampLocal(conflict.theirs.latestRespawnAt)}</td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.theirs.killedAt, use24Hour)}
+                          </td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.theirs.earliestRespawnAt, use24Hour)}
+                          </td>
+                          <td className="muted">
+                            {formatTimestampLocal(conflict.theirs.latestRespawnAt, use24Hour)}
+                          </td>
                           <td>
                             <div className="merge-choice-row">
-                              <label>
+                              <label className="radio-bubble">
                                 <input
                                   type="radio"
                                   name={conflict.id}

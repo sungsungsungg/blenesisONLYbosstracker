@@ -11,6 +11,7 @@ const STORAGE_KEY = 'boss-timer/v1';
 const ALL_GROUPS = 'ALL_GROUPS';
 const ALL_LOCATIONS_VALUE = 'ALL_LOCATIONS';
 const DEFAULT_GLOBAL_CHANNELS = 10;
+const SETTINGS_USE_24H = 'boss-timer/use24hour';
 
 type StoredState = {
   tables: BossTable[];
@@ -67,11 +68,20 @@ export default function App() {
     return loaded[0]?.channelsCount ?? DEFAULT_GLOBAL_CHANNELS;
   });
   const now = useNow(1000);
+  const [use24Hour, setUse24Hour] = useState<boolean>(() => {
+    const raw = localStorage.getItem(SETTINGS_USE_24H);
+    if (raw === null) return true;
+    return raw === '1';
+  });
 
   useEffect(() => {
     const payload: StoredState = { tables };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [tables]);
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_USE_24H, use24Hour ? '1' : '0');
+  }, [use24Hour]);
 
   const addTable = (bossName: string) => {
     const exists = tables.some((table) => table.bossName === bossName);
@@ -332,7 +342,7 @@ export default function App() {
 
       <div className={`app-layout ${appLayoutClass}`}>
         <div className="main-column">
-          <BackupPanel tables={tables} onReplaceTables={replaceTables} />
+          <BackupPanel tables={tables} onReplaceTables={replaceTables} use24Hour={use24Hour} />
           <CreateTableForm onAddTable={addTable} channelsCount={globalChannelsCount} />
 
           <section className="panel">
@@ -404,6 +414,7 @@ export default function App() {
                   onRemoveTable={removeTable}
                   onKilled={markKilled}
                   onClear={clearChannel}
+                  use24Hour={use24Hour}
                 />
               ))
             )}
@@ -458,6 +469,32 @@ export default function App() {
                     />
                   </label>
                   <button onClick={applyGlobalChannelsCount}>Apply To All Tables</button>
+                </div>
+                <div className="global-count-control">
+                  <label className="global-count-label">Time Format</label>
+                  <div
+                    className={`time-switch ${use24Hour ? 'left' : 'right'}`}
+                    role="group"
+                    aria-label="Time format"
+                  >
+                    <button
+                      type="button"
+                      className={`option ${use24Hour ? 'active' : ''}`}
+                      onClick={() => setUse24Hour(true)}
+                      aria-pressed={use24Hour}
+                    >
+                      24-hour
+                    </button>
+                    <div className="knob" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className={`option ${!use24Hour ? 'active' : ''}`}
+                      onClick={() => setUse24Hour(false)}
+                      aria-pressed={!use24Hour}
+                    >
+                      AM/PM
+                    </button>
+                  </div>
                 </div>
                 <div className="tooltip-button-wrap">
                   <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
