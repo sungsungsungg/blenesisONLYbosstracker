@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, Fragment } from 'react';
 import type { BossTable } from '../types';
 import {
   applyMergeChoices,
@@ -179,35 +179,68 @@ export function BackupPanel({ tables, onReplaceTables }: BackupPanelProps) {
           {mergePreview && (
             <div className="merge-conflicts">
               <h3>Merge Conflicts</h3>
-              {mergePreview.conflicts.map((conflict) => (
-                <div key={conflict.id} className="merge-conflict-card">
-                  <p className="merge-conflict-title">
-                    {conflict.bossName} - CH {conflict.channel}
-                  </p>
-                  <p className="muted">Mine: {formatChannelTimer(conflict.mine)}</p>
-                  <p className="muted">Theirs: {formatChannelTimer(conflict.theirs)}</p>
-                  <div className="merge-choice-row">
-                    <label>
-                      <input
-                        type="radio"
-                        name={conflict.id}
-                        checked={(choices[conflict.id] ?? 'mine') === 'mine'}
-                        onChange={() => handleChoiceChange(conflict.id, 'mine')}
-                      />
-                      Keep mine
-                    </label>
-                    <label>
-                      <input
-                        type="radio"
-                        name={conflict.id}
-                        checked={(choices[conflict.id] ?? 'mine') === 'theirs'}
-                        onChange={() => handleChoiceChange(conflict.id, 'theirs')}
-                      />
-                      Keep theirs
-                    </label>
-                  </div>
-                </div>
-              ))}
+
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Boss</th>
+                      <th>Channel</th>
+                      <th>Killed</th>
+                      <th>Earliest</th>
+                      <th>Latest</th>
+                      <th>Choice</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mergePreview.conflicts.map((conflict) => (
+                      <Fragment key={conflict.id}>
+                        <tr key={`${conflict.id}-mine`}>
+                          <td rowSpan={2}>
+                            <div className="merge-conflict-title">{conflict.bossName}</div>
+                          </td>
+                          <td rowSpan={2}>CH {conflict.channel}</td>
+                          <td className="muted">{formatTimestampLocal(conflict.mine.killedAt)}</td>
+                          <td className="muted">{formatTimestampLocal(conflict.mine.earliestRespawnAt)}</td>
+                          <td className="muted">{formatTimestampLocal(conflict.mine.latestRespawnAt)}</td>
+                          <td>
+                            <div className="merge-choice-row">
+                              <label>
+                                <input
+                                  type="radio"
+                                  name={conflict.id}
+                                  checked={(choices[conflict.id] ?? 'mine') === 'mine'}
+                                  onChange={() => handleChoiceChange(conflict.id, 'mine')}
+                                />
+                                Mine
+                              </label>
+                            </div>
+                          </td>
+                        </tr>
+
+                        <tr key={`${conflict.id}-theirs`}>
+                          <td className="muted">{formatTimestampLocal(conflict.theirs.killedAt)}</td>
+                          <td className="muted">{formatTimestampLocal(conflict.theirs.earliestRespawnAt)}</td>
+                          <td className="muted">{formatTimestampLocal(conflict.theirs.latestRespawnAt)}</td>
+                          <td>
+                            <div className="merge-choice-row">
+                              <label>
+                                <input
+                                  type="radio"
+                                  name={conflict.id}
+                                  checked={(choices[conflict.id] ?? 'mine') === 'theirs'}
+                                  onChange={() => handleChoiceChange(conflict.id, 'theirs')}
+                                />
+                                Theirs
+                              </label>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="backup-actions">
                 <button onClick={handleApplyMerge}>Apply Merge</button>
