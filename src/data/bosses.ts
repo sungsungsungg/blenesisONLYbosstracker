@@ -20,8 +20,8 @@ const BASE_LOCATION_GROUPS: LocationGroupDef[] = [
   },
   {
     id: 'group-3',
-    label: 'Japan, Taiwan',
-    locations: ['Japan', 'Taiwan'],
+    label: 'Japan, Taiwan, Shanghai',
+    locations: ['Japan', 'Taiwan', 'Shanghai'],
   },
   {
     id: 'group-4',
@@ -81,6 +81,7 @@ const BOSSES_RAW = [
   { name: 'Dodo', min: '45m', max: '5h 15m', location: 'Temple of Time' },
   { name: 'Lilynouch', min: '45m', max: '5h 15m', location: 'Temple of Time' },
   { name: 'Lyka', min: '45m', max: '5h 15m', location: 'Temple of Time' },
+  { name: 'Giant Centipede', min: '45m', max: '2h 15m', location: 'Shanghai' },
 ] as const;
 
 const groupedLocations = new Set(BASE_LOCATION_GROUPS.flatMap((group) => group.locations));
