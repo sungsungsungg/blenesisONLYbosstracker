@@ -59,6 +59,7 @@ export default function App() {
   const [tableLocationGroup, setTableLocationGroup] = useState(ALL_GROUPS);
   const [tableLocation, setTableLocation] = useState(ALL_LOCATIONS_VALUE);
   const [onlySpawnAvailable, setOnlySpawnAvailable] = useState(false);
+  const [isGlobalControlsExpanded, setIsGlobalControlsExpanded] = useState(true);
   const [globalChannelsCount, setGlobalChannelsCount] = useState<number>(() => {
     const loaded = loadTables();
     return loaded[0]?.channelsCount ?? DEFAULT_GLOBAL_CHANNELS;
@@ -98,7 +99,7 @@ export default function App() {
 
     if (nextCount < currentMaxCount) {
       const ok = window.confirm(
-        `Reduce all tables to ${nextCount} channels? Extra channels will be removed from the end.`
+        `Reduce all tables to ${nextCount} channels? Extra channels will be removed from the end.`,
       );
       if (!ok) return;
     }
@@ -114,7 +115,7 @@ export default function App() {
         }
 
         const extraChannels = Array.from({ length: nextCount - table.channelsCount }, (_, idx) =>
-          createEmptyChannel(table.channelsCount + idx + 1)
+          createEmptyChannel(table.channelsCount + idx + 1),
         );
 
         return {
@@ -122,7 +123,7 @@ export default function App() {
           channelsCount: nextCount,
           channels: [...table.channels, ...extraChannels],
         };
-      })
+      }),
     );
 
     setGlobalChannelsCount(nextCount);
@@ -144,7 +145,7 @@ export default function App() {
           channelsCount: nextChannelNumber,
           channels: [...table.channels, nextChannel],
         };
-      })
+      }),
     );
 
     setGlobalChannelsCount((prev) => Math.min(50, prev + 1));
@@ -158,7 +159,7 @@ export default function App() {
       prev.map((table) => ({
         ...table,
         channels: table.channels.map((channel) => ({ channel: channel.channel })),
-      }))
+      })),
     );
   };
 
@@ -185,7 +186,7 @@ export default function App() {
             };
           }),
         };
-      })
+      }),
     );
   };
 
@@ -197,10 +198,10 @@ export default function App() {
         return {
           ...table,
           channels: table.channels.map((channel) =>
-            channel.channel === channelNumber ? { channel: channelNumber } : channel
+            channel.channel === channelNumber ? { channel: channelNumber } : channel,
           ),
         };
-      })
+      }),
     );
   };
 
@@ -209,6 +210,10 @@ export default function App() {
     if (nextTables.length > 0) {
       setGlobalChannelsCount(nextTables[0].channelsCount);
     }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const tableViews = useMemo(() => {
@@ -235,7 +240,7 @@ export default function App() {
             const status = getChannelStatus(
               now,
               channel.earliestRespawnAt,
-              channel.latestRespawnAt
+              channel.latestRespawnAt,
             );
             return status === 'IN_WINDOW' || status === 'LATE';
           });
@@ -261,107 +266,173 @@ export default function App() {
     <div className="app">
       <header>
         <h1>Boss Timer Tracker</h1>
-        <p className="muted">All timestamps are displayed in your local timezone ({APP_TIME_ZONE}).</p>
+        <p className="muted">
+          All timestamps are displayed in your local timezone ({APP_TIME_ZONE}).
+        </p>
       </header>
 
-      <BackupPanel tables={tables} onReplaceTables={replaceTables} />
+      <div
+        className={`app-layout ${isGlobalControlsExpanded ? 'with-sidebar' : 'without-sidebar'}`}
+      >
+        <div className="main-column">
+          <BackupPanel tables={tables} onReplaceTables={replaceTables} />
+          <CreateTableForm onAddTable={addTable} channelsCount={globalChannelsCount} />
 
-      <section className="panel">
-        <h2>Global Table Controls</h2>
-        <div className="create-form">
-          <label>
-            Channels For All Tables (1-50)
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={globalChannelsCount}
-              onChange={(event) => setGlobalChannelsCount(Number(event.target.value || 1))}
-            />
-          </label>
-          <button onClick={applyGlobalChannelsCount}>Apply To All Tables</button>
-          <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
-          <button className="btn-danger" onClick={clearAllChannels}>
-            Clear All Rows (All Tables)
-          </button>
+          <section className="panel">
+            <h2>Search Existing Tables</h2>
+            <div className="create-form">
+              <label>
+                Search Boss / Location
+                <input
+                  type="text"
+                  value={tableSearch}
+                  placeholder="Type boss or location"
+                  onChange={(event) => setTableSearch(event.target.value)}
+                />
+              </label>
+
+              <label>
+                Location Group
+                <select
+                  value={tableLocationGroup}
+                  onChange={(event) => setTableLocationGroup(event.target.value)}
+                >
+                  <option value={ALL_GROUPS}>All groups</option>
+                  {LOCATION_GROUPS.map((group) => (
+                    <option key={group.id} value={group.label}>
+                      {group.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Location
+                <select
+                  value={tableLocation}
+                  onChange={(event) => setTableLocation(event.target.value)}
+                >
+                  <option value={ALL_LOCATIONS_VALUE}>All locations</option>
+                  {visibleLocations.map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Spawn Filter
+                <select
+                  value={onlySpawnAvailable ? 'available' : 'all'}
+                  onChange={(event) => setOnlySpawnAvailable(event.target.value === 'available')}
+                >
+                  <option value="all">All tables</option>
+                  <option value="available">Spawn available (any CH)</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <main className="tables">
+            {tableViews.length === 0 ? (
+              <section className="panel muted">No tables yet. Create one above.</section>
+            ) : (
+              tableViews.map(({ table, boss }) => (
+                <BossTableCard
+                  key={table.id}
+                  table={table}
+                  boss={boss}
+                  now={now}
+                  onRemoveTable={removeTable}
+                  onKilled={markKilled}
+                  onClear={clearChannel}
+                />
+              ))
+            )}
+          </main>
         </div>
-        <p className="muted global-note">
-          Apply To All Tables adds empty channels only. Use Add Timed CH To All Tables to append a channel with respawn timers starting now.
-        </p>
-      </section>
 
-      <CreateTableForm onAddTable={addTable} channelsCount={globalChannelsCount} />
-
-      <section className="panel">
-        <h2>Search Existing Tables</h2>
-        <div className="create-form">
-          <label>
-            Search Boss / Location
-            <input
-              type="text"
-              value={tableSearch}
-              placeholder="Type boss or location"
-              onChange={(event) => setTableSearch(event.target.value)}
-            />
-          </label>
-
-          <label>
-            Location Group
-            <select
-              value={tableLocationGroup}
-              onChange={(event) => setTableLocationGroup(event.target.value)}
-            >
-              <option value={ALL_GROUPS}>All groups</option>
-              {LOCATION_GROUPS.map((group) => (
-                <option key={group.id} value={group.label}>
-                  {group.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Location
-            <select value={tableLocation} onChange={(event) => setTableLocation(event.target.value)}>
-              <option value={ALL_LOCATIONS_VALUE}>All locations</option>
-              {visibleLocations.map((location) => (
-                <option key={location} value={location}>
-                  {location}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Spawn Filter
-            <select
-              value={onlySpawnAvailable ? 'available' : 'all'}
-              onChange={(event) => setOnlySpawnAvailable(event.target.value === 'available')}
-            >
-              <option value="all">All tables</option>
-              <option value="available">Spawn available (any CH)</option>
-            </select>
-          </label>
-        </div>
-      </section>
-
-      <main className="tables">
-        {tableViews.length === 0 ? (
-          <section className="panel muted">No tables yet. Create one above.</section>
+        {isGlobalControlsExpanded ? (
+          <aside className="sidebar expanded">
+            <section className="panel sticky-panel">
+              <div className="panel-header">
+                <h2>Global Table Controls</h2>
+                <button
+                  type="button"
+                  className="panel-header-toggle"
+                  onClick={() => setIsGlobalControlsExpanded(false)}
+                  aria-label="Collapse Global Table Controls"
+                  title="Collapse Global Table Controls"
+                >
+                  <span className="panel-arrow expanded" aria-hidden="true">
+                    ▾
+                  </span>
+                </button>
+              </div>
+              <div className="create-form">
+                <div className="global-count-control">
+                  <label className="global-count-label">
+                    Channels For All Tables (1-50)
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={globalChannelsCount}
+                      onChange={(event) => setGlobalChannelsCount(Number(event.target.value || 1))}
+                    />
+                  </label>
+                  <button onClick={applyGlobalChannelsCount}>Apply To All Tables</button>
+                </div>
+                <div className="tooltip-button-wrap">
+                  <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
+                  <span className="info-tooltip" aria-label="Help for Add Timed CH To All Tables">
+                    ?
+                    <span className="tooltip-text">
+                      Use this as soon as a new channel is created. The respawn timer starts the
+                      moment you press it, so it tracks the very first boss spawn from that exact
+                      point.
+                    </span>
+                  </span>
+                </div>
+                <button className="btn-danger" onClick={clearAllChannels}>
+                  Clear All Rows (All Tables)
+                </button>
+              </div>
+              <p className="muted global-note">
+                Apply To All Tables adds empty channels only. Use Add Timed CH To All Tables to
+                append a channel with respawn timers starting now.
+              </p>
+              <button type="button" className="scroll-top-btn" onClick={scrollToTop}>
+                Scroll to Top
+              </button>
+            </section>
+          </aside>
         ) : (
-          tableViews.map(({ table, boss }) => (
-            <BossTableCard
-              key={table.id}
-              table={table}
-              boss={boss}
-              now={now}
-              onRemoveTable={removeTable}
-              onKilled={markKilled}
-              onClear={clearChannel}
-            />
-          ))
+          <aside className="sidebar collapsed">
+            <div className="sidebar-collapsed-tab" aria-label="Collapsed Global Table Controls">
+              <button
+                type="button"
+                className="side-tab-button side-tab-scroll"
+                onClick={scrollToTop}
+                aria-label="Scroll to top"
+                title="Scroll to top"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="side-tab-button side-tab-menu"
+                onClick={() => setIsGlobalControlsExpanded(true)}
+                aria-label="Expand Global Table Controls"
+                title="Expand Global Table Controls"
+              >
+                ☰
+              </button>
+            </div>
+          </aside>
         )}
-      </main>
+      </div>
     </div>
   );
 }
