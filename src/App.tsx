@@ -12,6 +12,9 @@ const ALL_GROUPS = 'ALL_GROUPS';
 const ALL_LOCATIONS_VALUE = 'ALL_LOCATIONS';
 const DEFAULT_GLOBAL_CHANNELS = 10;
 const SETTINGS_USE_24H = 'boss-timer/use24hour';
+const SETTINGS_THEME = 'boss-timer/theme';
+
+type ThemeMode = 'day' | 'night';
 
 type StoredState = {
   tables: BossTable[];
@@ -54,6 +57,12 @@ function loadTables(): BossTable[] {
   }
 }
 
+function loadThemePreference(): ThemeMode {
+  const raw = localStorage.getItem(SETTINGS_THEME);
+  if (raw === 'night') return 'night';
+  return 'day';
+}
+
 export default function App() {
   const [tables, setTables] = useState<BossTable[]>(() => loadTables());
   const [tableSearch, setTableSearch] = useState('');
@@ -73,6 +82,7 @@ export default function App() {
     if (raw === null) return true;
     return raw === '1';
   });
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => loadThemePreference());
 
   useEffect(() => {
     const payload: StoredState = { tables };
@@ -82,6 +92,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(SETTINGS_USE_24H, use24Hour ? '1' : '0');
   }, [use24Hour]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeMode;
+    localStorage.setItem(SETTINGS_THEME, themeMode);
+  }, [themeMode]);
 
   const addTable = (bossName: string) => {
     const exists = tables.some((table) => table.bossName === bossName);
@@ -334,7 +349,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Boss Timer Tracker</h1>
+        <h1>Boss Timer Tracker </h1>
         <p className="muted">
           All timestamps are displayed in your local timezone ({APP_TIME_ZONE}).
         </p>
@@ -470,6 +485,20 @@ export default function App() {
                   </label>
                   <button onClick={applyGlobalChannelsCount}>Apply To All Tables</button>
                 </div>
+                <div className="tooltip-button-wrap">
+                  <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
+                  <span className="info-tooltip" aria-label="Help for Add Timed CH To All Tables">
+                    ?
+                    <span className="tooltip-text">
+                      Use this as soon as a new channel is created. The respawn timer starts the
+                      moment you press it, so it tracks the very first boss spawn from that exact
+                      point.
+                    </span>
+                  </span>
+                </div>
+                <button className="btn-danger" onClick={clearAllChannels}>
+                  Clear All Rows (All Tables)
+                </button>
                 <div className="global-count-control">
                   <label className="global-count-label">Time Format</label>
                   <div
@@ -496,20 +525,32 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-                <div className="tooltip-button-wrap">
-                  <button onClick={addTimedChannelToAllTables}>Add Timed CH To All Tables</button>
-                  <span className="info-tooltip" aria-label="Help for Add Timed CH To All Tables">
-                    ?
-                    <span className="tooltip-text">
-                      Use this as soon as a new channel is created. The respawn timer starts the
-                      moment you press it, so it tracks the very first boss spawn from that exact
-                      point.
-                    </span>
-                  </span>
+                <div className="global-count-control">
+                  <label className="global-count-label">Appearance</label>
+                  <div
+                    className={`time-switch ${themeMode === 'day' ? 'left' : 'right'}`}
+                    role="group"
+                    aria-label="Theme mode"
+                  >
+                    <button
+                      type="button"
+                      className={`option ${themeMode === 'day' ? 'active' : ''}`}
+                      onClick={() => setThemeMode('day')}
+                      aria-pressed={themeMode === 'day'}
+                    >
+                      Day
+                    </button>
+                    <div className="knob" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className={`option ${themeMode === 'night' ? 'active' : ''}`}
+                      onClick={() => setThemeMode('night')}
+                      aria-pressed={themeMode === 'night'}
+                    >
+                      Night
+                    </button>
+                  </div>
                 </div>
-                <button className="btn-danger" onClick={clearAllChannels}>
-                  Clear All Rows (All Tables)
-                </button>
               </div>
               <p className="muted global-note">
                 Apply To All Tables adds empty channels only. Use Add Timed CH To All Tables to

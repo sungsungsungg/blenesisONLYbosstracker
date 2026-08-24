@@ -34,21 +34,6 @@ async function copyText(text: string, textarea: HTMLTextAreaElement | null): Pro
   }
 }
 
-function formatChannelTimer(
-  timer: {
-    killedAt?: number;
-    earliestRespawnAt?: number;
-    latestRespawnAt?: number;
-  },
-  use24Hour = true,
-): string {
-  if (!timer.earliestRespawnAt && !timer.latestRespawnAt) return 'No timer';
-  const earliest = formatTimestampLocal(timer.earliestRespawnAt, use24Hour);
-  const latest = formatTimestampLocal(timer.latestRespawnAt, use24Hour);
-  const killed = formatTimestampLocal(timer.killedAt, use24Hour);
-  return `Killed: ${killed} | Earliest: ${earliest} | Latest: ${latest}`;
-}
-
 export function BackupPanel({ tables, onReplaceTables, use24Hour = true }: BackupPanelProps) {
   const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
